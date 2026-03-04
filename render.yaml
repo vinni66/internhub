@@ -1,13 +1,10 @@
 services:
   - type: web
     name: internhub-api
-    runtime: python
+    runtime: docker
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./Dockerfile
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12
       - key: ENVIRONMENT
         value: production
       - key: DEBUG
@@ -25,5 +22,5 @@ services:
       - key: ADZUNA_APP_KEY
         value: d533817756c10bc7e66c784f39d3f04d
       - key: ALLOWED_ORIGINS
-        value: '["https://internhub-app.web.app","https://internhub-app.firebaseapp.com","http://localhost:7070","http://127.0.0.1:7070"]'
+        value: '["https://internhub-app.vercel.app","http://localhost:7070","http://127.0.0.1:7070"]'
     healthCheckPath: /api/v1/health
