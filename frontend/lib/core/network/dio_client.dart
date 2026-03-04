@@ -7,8 +7,6 @@ class DioClient {
   late final Dio _dio;
   final _unauthCtrl = StreamController<void>.broadcast();
 
-  Stream<void> get onUnauthorized => _unauthCtrl.stream;
-
   DioClient() {
     _dio = Dio(
       BaseOptions(
@@ -22,6 +20,7 @@ class DioClient {
   }
 
   Dio get dio => _dio;
+  Stream<void> get onUnauthorized => _unauthCtrl.stream;
 }
 
 class _AuthInterceptor extends Interceptor {

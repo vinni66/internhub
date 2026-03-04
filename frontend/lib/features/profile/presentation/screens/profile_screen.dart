@@ -174,7 +174,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     );
                     if (confirm == true) {
-                      ref.read(authNotifierProvider.notifier).logout();
+                      await ref.read(authNotifierProvider.notifier).logout();
                     }
                   },
                   icon: const Icon(Icons.logout_rounded),

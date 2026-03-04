@@ -1,0 +1,1 @@
+import 'package:dio/dio.dart'; void main() { final dio = Dio(BaseOptions(baseUrl: 'https://internhub-bn09.onrender.com/api/v1')); dio.interceptors.add(InterceptorsWrapper(onRequest: (opts, h) { print('URL: ' + opts.uri.toString()); h.reject(DioException(requestOptions: opts, error: 'Blocked')); })); dio.post('/upload/image').catchError((e) => print('Done')); }

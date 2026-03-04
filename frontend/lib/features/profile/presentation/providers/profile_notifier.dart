@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:internhub_app/core/constants/api_constants.dart';
 
@@ -68,6 +69,14 @@ class ProfileNotifier extends StateNotifier<AsyncValue<StudentProfileData>> {
       final resp = await _client.dio.get(ApiConstants.studentProfile);
       state = AsyncValue.data(
           StudentProfileData.fromJson(resp.data as Map<String, dynamic>));
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        // Silently ignore 401 during logout transition
+        state = const AsyncValue.data(
+            StudentProfileData(id: '', fullName: 'Loading...'));
+      } else {
+        state = AsyncValue.error(e, e.stackTrace);
+      }
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

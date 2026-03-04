@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +14,11 @@ final unreadNotifCountProvider = FutureProvider.autoDispose<int>((ref) async {
     final resp = await client.dio.get(ApiConstants.adminStats
         .replaceAll('/admin/stats', '/notifications/unread-count'));
     return (resp.data as Map<String, dynamic>)['unread_count'] as int? ?? 0;
+  } on DioException catch (e) {
+    if (e.response?.statusCode == 401) {
+      return 0; // Silently ignore 401 during logout transition
+    }
+    return 0;
   } catch (_) {
     return 0;
   }
@@ -88,7 +94,10 @@ class StudentDashboardScreen extends ConsumerWidget {
               radius: 16,
               backgroundColor: Colors.white,
               child: Text(
-                (user?.email.substring(0, 1) ?? 'U').toUpperCase(),
+                (user?.email.isNotEmpty == true
+                        ? user!.email.substring(0, 1)
+                        : 'U')
+                    .toUpperCase(),
                 style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
@@ -96,6 +105,35 @@ class StudentDashboardScreen extends ConsumerWidget {
               ),
             ),
             onPressed: () => context.go(AppRoutes.profile),
+          ),
+          // ── Sign Out ──────────────────────────────────────────────
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: AppColors.error),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  backgroundColor: AppColors.bgCard,
+                  title: const Text('Sign Out?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error),
+                      child: const Text('Sign Out',
+                          style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                await ref.read(authNotifierProvider.notifier).logout();
+              }
+            },
           ),
           const SizedBox(width: 8),
         ],

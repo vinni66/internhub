@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +26,11 @@ final homeStatsProvider =
         ? appData.length
         : (appData['items'] as List?)?.length ?? 0;
     return {'internships': internshipTotal, 'applications': appCount};
+  } on DioException catch (e) {
+    if (e.response?.statusCode == 401) {
+      return {'internships': 0, 'applications': 0};
+    }
+    return {'internships': 0, 'applications': 0};
   } catch (_) {
     return {'internships': 0, 'applications': 0};
   }
@@ -40,9 +47,27 @@ class StudentHomeScreen extends ConsumerStatefulWidget {
 class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
   final PageController _pageController = PageController();
   int _currentBannerIndex = 0;
+  int _bannerCount = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_bannerCount > 1 && _pageController.hasClients) {
+        int next = (_currentBannerIndex + 1) % _bannerCount;
+        _pageController.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -116,6 +141,7 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
               data: (internships) {
                 if (internships.isEmpty) return const SizedBox.shrink();
                 final featured = internships.take(3).toList();
+                _bannerCount = featured.length;
                 return Column(
                   children: [
                     SizedBox(
@@ -444,22 +470,16 @@ class _HeroBannerCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: AppColors.secondary,
-          image: internship.posterUrl != null
-              ? DecorationImage(
-                  image: NetworkImage(
-                      '${ApiConstants.baseUrl.replaceAll('/api/v1', '')}${internship.posterUrl}'),
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                      Colors.black.withValues(alpha: 0.4), BlendMode.darken),
-                )
-              : null,
-          gradient: internship.posterUrl == null
-              ? const LinearGradient(
-                  colors: [AppColors.secondary, Color(0xFFFFE0A5)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
+          image: DecorationImage(
+            image: internship.posterUrl != null
+                ? NetworkImage(
+                    '${ApiConstants.baseUrl.replaceAll('/api/v1', '')}${internship.posterUrl}')
+                : const AssetImage('assets/images/default_banner.png')
+                    as ImageProvider,
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+                Colors.black.withValues(alpha: 0.4), BlendMode.darken),
+          ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(

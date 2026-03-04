@@ -46,7 +46,7 @@ class AuthRepository {
       return data;
     } on DioException catch (e) {
       throw AuthException(
-        _mapErrorCode(e.response?.data?['code'] as String?),
+        _extractErrorMessage(e),
         statusCode: e.response?.statusCode,
       );
     }
@@ -73,7 +73,7 @@ class AuthRepository {
       );
     } on DioException catch (e) {
       throw AuthException(
-        _mapErrorCode(e.response?.data?['code'] as String?),
+        _extractErrorMessage(e),
         statusCode: e.response?.statusCode,
       );
     }
@@ -90,8 +90,9 @@ class AuthRepository {
         );
       }
     } catch (_) {
-      // Ignore logout API errors — always clear local storage
+      // Ignore API errors during logout (e.g., timeout or invalid token)
     } finally {
+      // Always forcefully clear local storage tokens so the app registers as logged out
       await SecureStorageService.clearAll();
     }
   }
@@ -105,7 +106,7 @@ class AuthRepository {
       );
     } on DioException catch (e) {
       throw AuthException(
-        _mapErrorCode(e.response?.data?['code'] as String?),
+        _extractErrorMessage(e),
       );
     }
   }
@@ -127,6 +128,30 @@ class AuthRepository {
   }
 
   // ─── Error mapper ────────────────────────────────────────────────────
+  String _extractErrorMessage(DioException e) {
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      return 'Connection timed out. Please check your internet or try again.';
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      return 'Could not connect to the server (Connection Error). Backend might be offline.';
+    }
+
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      if (data['detail'] is String) return data['detail'];
+      if (data['detail'] is List) {
+        return (data['detail'] as List).map((err) => err['msg']).join(', ');
+      }
+      if (data['message'] is String) return data['message'];
+      if (data['error'] is Map) {
+        if (data['error']['message'] is String) return data['error']['message'];
+      }
+      return _mapErrorCode(data['code'] as String?);
+    }
+    return e.message ?? 'Something went wrong. Please try again.';
+  }
+
   String _mapErrorCode(String? code) => switch (code) {
         'USER_NOT_FOUND' => 'No account found with this email.',
         'INVALID_PASSWORD' => 'Incorrect password. Please try again.',

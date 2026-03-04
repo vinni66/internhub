@@ -42,6 +42,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
+        allow_origin_regex=r"https://.*\.vercel\.app" if not settings.DEBUG else None,
         allow_credentials=not settings.DEBUG,  # credentials not supported with wildcard
         allow_methods=["*"],
         allow_headers=["*"],

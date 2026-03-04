@@ -43,23 +43,50 @@ class AppRoutes {
   static const String examResult = '/exam-result';
 }
 
+// ─── Router Refresh Notifier ────────────────────────────────────────────────
+class RouterNotifier extends ChangeNotifier {
+  final Ref _ref;
+
+  RouterNotifier(this._ref) {
+    _ref.listen<AuthState>(
+      authNotifierProvider,
+      (_, __) {
+        print('ROUTER NOTIFIER TRIGGERED by authState change');
+        notifyListeners();
+      },
+    );
+  }
+}
+
+final routerNotifierProvider = Provider((ref) => RouterNotifier(ref));
+
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authNotifierProvider);
+  final notifier = ref.watch(routerNotifierProvider);
 
   return GoRouter(
     initialLocation: AppRoutes.splash,
+    refreshListenable: notifier,
     redirect: (context, state) {
+      final authState = ref.read(authNotifierProvider);
       final isInitial = authState is AuthStateInitial;
       final isLoading = authState is AuthStateLoading;
       final isAuthenticated = authState is AuthStateAuthenticated;
       final loc = state.matchedLocation;
 
+      print('ROUTER REDIRECT: authState=$authState, loc=$loc');
+
       final isAuthRoute = loc == AppRoutes.login ||
           loc == AppRoutes.register ||
           loc == AppRoutes.forgotPassword;
 
-      if (isInitial || isLoading) return AppRoutes.splash;
-      if (!isAuthenticated && !isAuthRoute) return AppRoutes.login;
+      if (isInitial || isLoading) {
+        print('ROUTER REDIRECT returning splash');
+        return AppRoutes.splash;
+      }
+      if (!isAuthenticated && !isAuthRoute) {
+        print('ROUTER REDIRECT returning login');
+        return AppRoutes.login;
+      }
       if (authState is AuthStateAuthenticated &&
           (isAuthRoute || loc == AppRoutes.splash)) {
         final user = authState.user;
@@ -67,6 +94,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (user.role == 'faculty') return AppRoutes.facultyDashboard;
         return AppRoutes.dashboard;
       }
+      print('ROUTER REDIRECT returning null (no redirect)');
       return null;
     },
     routes: [
