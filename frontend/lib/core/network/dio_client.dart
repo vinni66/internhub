@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:internhub_app/core/constants/api_constants.dart';
 import 'package:internhub_app/core/security/secure_storage.dart';
 
 class DioClient {
   late final Dio _dio;
+  final _unauthCtrl = StreamController<void>.broadcast();
+
+  Stream<void> get onUnauthorized => _unauthCtrl.stream;
 
   DioClient() {
     _dio = Dio(
@@ -14,7 +18,7 @@ class DioClient {
         headers: {'Content-Type': 'application/json'},
       ),
     );
-    _dio.interceptors.add(_AuthInterceptor(_dio));
+    _dio.interceptors.add(_AuthInterceptor(_dio, _unauthCtrl));
   }
 
   Dio get dio => _dio;
@@ -22,9 +26,10 @@ class DioClient {
 
 class _AuthInterceptor extends Interceptor {
   final Dio _dio;
+  final StreamController<void> _unauthCtrl;
   bool _isRefreshing = false;
 
-  _AuthInterceptor(this._dio);
+  _AuthInterceptor(this._dio, this._unauthCtrl);
 
   @override
   Future<void> onRequest(
@@ -60,6 +65,7 @@ class _AuthInterceptor extends Interceptor {
         final newAccessToken = response.data['access_token'] as String?;
         if (newAccessToken == null) {
           await SecureStorageService.clearAll();
+          _unauthCtrl.add(null);
           handler.next(error);
           return;
         }
@@ -73,6 +79,7 @@ class _AuthInterceptor extends Interceptor {
         handler.resolve(retried);
       } catch (_) {
         await SecureStorageService.clearAll();
+        _unauthCtrl.add(null);
         handler.next(error);
       } finally {
         _isRefreshing = false;

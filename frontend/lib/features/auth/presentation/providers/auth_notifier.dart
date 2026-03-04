@@ -42,15 +42,22 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-  (ref) => AuthNotifier(ref.watch(authRepositoryProvider)),
+  (ref) => AuthNotifier(
+      ref.watch(authRepositoryProvider), ref.watch(dioClientProvider)),
 );
 
 // ─── Notifier ─────────────────────────────────────────────────────────────
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _repo;
+  final DioClient _dioClient;
 
-  AuthNotifier(this._repo) : super(const AuthStateInitial()) {
+  AuthNotifier(this._repo, this._dioClient) : super(const AuthStateInitial()) {
     _init();
+    _dioClient.onUnauthorized.listen((_) {
+      if (mounted) {
+        state = const AuthStateUnauthenticated();
+      }
+    });
   }
 
   Future<void> _init() async {
