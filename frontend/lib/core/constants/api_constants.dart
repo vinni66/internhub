@@ -4,12 +4,11 @@ class ApiConstants {
   // ── Base ──────────────────────────────────────────────────────────────
   static String get baseUrl {
     if (kIsWeb) {
-      return 'http://localhost:8000/api/v1';
+      return 'https://internhub-bn09.onrender.com/api/v1';
     }
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8000/api/v1'; // Android emulator alias to host
-    }
-    return 'http://localhost:8000/api/v1';
+    // Android emulator uses 10.0.2.2 to reach host machine.
+    // Real physical Android/iOS devices must use the live server.
+    return 'https://internhub-bn09.onrender.com/api/v1';
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────

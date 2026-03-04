@@ -1,6 +1,10 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
 import 'package:internhub_app/core/constants/api_constants.dart';
 import 'package:internhub_app/core/theme/app_colors.dart';
 import 'package:internhub_app/features/auth/presentation/providers/auth_notifier.dart';
@@ -29,6 +33,8 @@ class _CreateInternshipScreenState
   final _deadlineCtrl = TextEditingController();
   String _mode = 'hybrid';
   bool _loading = false;
+  XFile? _posterImage;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
@@ -50,16 +56,41 @@ class _CreateInternshipScreenState
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() => _posterImage = image);
+    }
+  }
+
+  Future<String?> _uploadImage() async {
+    if (_posterImage == null) return null;
+    final client = ref.read(dioClientProvider);
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(_posterImage!.path,
+            filename: _posterImage!.name),
+      });
+      final res = await client.dio.post('/upload/image', data: formData);
+      return res.data['url'] as String?;
+    } catch (e) {
+      debugPrint('Image upload failed: $e');
+      return null;
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
+      String? posterUrl = await _uploadImage();
       final client = ref.read(dioClientProvider);
       await client.dio.post(ApiConstants.facultyInternships, data: {
         'title': _titleCtrl.text.trim(),
         'company_name': _companyCtrl.text.trim(),
         'description': _descCtrl.text.trim(),
         'mode': _mode,
+        'poster_url': posterUrl,
         'location': _locationCtrl.text.trim().isEmpty
             ? null
             : _locationCtrl.text.trim(),
@@ -130,6 +161,38 @@ class _CreateInternshipScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _section('Basic Information'),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  width: double.infinity,
+                  height: 160,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgCard,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: _posterImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: kIsWeb
+                              ? Image.network(_posterImage!.path,
+                                  fit: BoxFit.cover)
+                              : Image.file(File(_posterImage!.path),
+                                  fit: BoxFit.cover),
+                        )
+                      : const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate_outlined,
+                                size: 40, color: Colors.grey),
+                            SizedBox(height: 8),
+                            Text('Upload Poster/Banner (Optional)',
+                                style: TextStyle(color: Colors.grey)),
+                          ],
+                        ),
+                ),
+              ),
               _field(_titleCtrl, 'Job Title *', required: true),
               _field(_companyCtrl, 'Company Name *', required: true),
               _field(_descCtrl, 'Description *', required: true, maxLines: 4),

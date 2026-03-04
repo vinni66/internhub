@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, students, internships, exam, recommendations, analytics, admin, applications, faculty, notifications, jobs
+from app.api.v1 import auth, students, internships, exam, recommendations, analytics, admin, applications, faculty, notifications, jobs, upload
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -14,3 +14,4 @@ api_router.include_router(applications.router)
 api_router.include_router(faculty.router)
 api_router.include_router(notifications.router)
 api_router.include_router(jobs.router)
+api_router.include_router(upload.router)

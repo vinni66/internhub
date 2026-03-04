@@ -14,6 +14,7 @@ class InternshipModel {
   final String title;
   final String companyName;
   final String? companyLogoUrl;
+  final String? posterUrl;
   final String mode;
   final String? location;
   final String? stipendRange;
@@ -27,6 +28,7 @@ class InternshipModel {
     required this.title,
     required this.companyName,
     this.companyLogoUrl,
+    this.posterUrl,
     required this.mode,
     this.location,
     this.stipendRange,
@@ -54,6 +56,7 @@ class InternshipModel {
       title: j['title'] as String,
       companyName: j['company_name'] as String,
       companyLogoUrl: j['company_logo_url'] as String?,
+      posterUrl: j['poster_url'] as String?,
       mode: (j['mode'] as String?) ?? 'remote',
       location: j['location'] as String?,
       stipendRange: stipendRange,

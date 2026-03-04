@@ -27,6 +27,7 @@ class Internship(Base, TimestampMixin):
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     company_name: Mapped[str] = mapped_column(String(200), nullable=False)
     company_logo_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    poster_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     required_skills: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     min_cgpa: Mapped[Optional[float]] = mapped_column(Numeric(4, 2), nullable=True)

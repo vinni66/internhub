@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+import os
 
 from app.config import settings
 from app.api.v1.router import api_router
@@ -58,6 +60,10 @@ def create_app() -> FastAPI:
                 "max-age=31536000; includeSubDomains; preload"
             )
         return response
+
+    # ─── Static files for uploads ──────────────────────────────────────────
+    os.makedirs("uploads", exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
     # ─── Request ID ───────────────────────────────────────────────────────
     @app.middleware("http")

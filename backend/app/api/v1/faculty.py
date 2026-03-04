@@ -29,7 +29,7 @@ class InternshipCreate(BaseModel):
     duration_weeks: Optional[int] = None
     min_cgpa: Optional[float] = None
     application_deadline: Optional[str] = None
-
+    poster_url: Optional[str] = None
 
 class InternshipUpdate(BaseModel):
     title: Optional[str] = None
@@ -44,6 +44,7 @@ class InternshipUpdate(BaseModel):
     duration_weeks: Optional[int] = None
     min_cgpa: Optional[float] = None
     application_deadline: Optional[str] = None
+    poster_url: Optional[str] = None
 
 
 class OverrideFlagRequest(BaseModel):

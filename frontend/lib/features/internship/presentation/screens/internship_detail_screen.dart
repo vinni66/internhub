@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:internhub_app/core/theme/app_colors.dart';
+import 'package:internhub_app/core/constants/api_constants.dart';
 import 'package:internhub_app/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:internhub_app/features/internship/presentation/screens/internship_list_screen.dart';
 
@@ -141,17 +142,37 @@ class InternshipDetailScreen extends ConsumerWidget {
       pinned: true,
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: const BoxDecoration(gradient: AppColors.gradientPrimary),
-          child: Center(
-            child: Text(
-              internship.companyName[0],
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 72,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          decoration: BoxDecoration(
+            color: AppColors.secondary,
+            image: internship.posterUrl != null
+                ? DecorationImage(
+                    image: NetworkImage(
+                        '${ApiConstants.baseUrl.replaceAll('/api/v1', '')}${internship.posterUrl}'),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                        Colors.black.withValues(alpha: 0.4), BlendMode.darken),
+                  )
+                : null,
+            gradient: internship.posterUrl == null
+                ? const LinearGradient(
+                    colors: [AppColors.secondary, Color(0xFFFFE0A5)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null,
           ),
+          child: internship.posterUrl == null
+              ? Center(
+                  child: Text(
+                    internship.companyName[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 72,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                )
+              : null,
         ),
       ),
     );

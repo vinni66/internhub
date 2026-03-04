@@ -443,11 +443,23 @@ class _HeroBannerCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.secondary, Color(0xFFFFE0A5)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: AppColors.secondary,
+          image: internship.posterUrl != null
+              ? DecorationImage(
+                  image: NetworkImage(
+                      '${ApiConstants.baseUrl.replaceAll('/api/v1', '')}${internship.posterUrl}'),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                      Colors.black.withValues(alpha: 0.4), BlendMode.darken),
+                )
+              : null,
+          gradient: internship.posterUrl == null
+              ? const LinearGradient(
+                  colors: [AppColors.secondary, Color(0xFFFFE0A5)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
