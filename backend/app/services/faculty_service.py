@@ -28,6 +28,7 @@ class FacultyService:
             duration_weeks=data.get("duration_weeks"),
             min_cgpa=data.get("min_cgpa"),
             application_deadline=data.get("application_deadline"),
+            poster_url=data.get("poster_url"),
             is_published=False,
             is_active=True,
         )
@@ -44,7 +45,7 @@ class FacultyService:
         updatable = [
             "title", "company_name", "description", "required_skills",
             "location", "stipend_min", "stipend_max", "openings",
-            "duration_weeks", "min_cgpa", "application_deadline",
+            "duration_weeks", "min_cgpa", "application_deadline", "poster_url"
         ]
         for field in updatable:
             if field in data:
