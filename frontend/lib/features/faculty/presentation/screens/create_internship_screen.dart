@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 import 'package:internhub_app/core/constants/api_constants.dart';
 import 'package:internhub_app/core/theme/app_colors.dart';
 import 'package:internhub_app/features/auth/presentation/providers/auth_notifier.dart';
@@ -67,10 +69,13 @@ class _CreateInternshipScreenState
     if (_posterImage == null) return null;
     final client = ref.read(dioClientProvider);
     try {
+      final mimeType = lookupMimeType(_posterImage!.path) ?? 'image/jpeg';
+      final mimeSplit = mimeType.split('/');
       final formData = FormData.fromMap({
         'file': MultipartFile.fromBytes(
           await _posterImage!.readAsBytes(),
           filename: _posterImage!.name,
+          contentType: MediaType(mimeSplit[0], mimeSplit[1]),
         ),
       });
       final res = await client.dio.post('/upload/image', data: formData);
