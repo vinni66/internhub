@@ -22,5 +22,5 @@ services:
       - key: ADZUNA_APP_KEY
         value: d533817756c10bc7e66c784f39d3f04d
       - key: ALLOWED_ORIGINS
-        value: '["https://internhub-app.vercel.app","http://localhost:7070","http://127.0.0.1:7070"]'
+        value: '["https://frontend-vinni66s-projects.vercel.app","https://internhub-app.vercel.app","http://localhost:7070","http://127.0.0.1:7070"]'
     healthCheckPath: /api/v1/health
