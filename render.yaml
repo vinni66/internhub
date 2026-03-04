@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: internhub-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        value: postgresql+asyncpg://neondb_owner:npg_oz8DQ9kZCcVr@ep-shy-art-a13fapxv-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - key: REDIS_URL
+        value: rediss://default:AXAkAAIncDI3YmJiODZiNzAzOWU0NmFmODc0ODE3OTM3OGI4MjNiYnAyMjg3MDg@wired-civet-28708.upstash.io:6379
+      - key: SECRET_KEY
+        generateValue: true
+      - key: AES_MASTER_KEY
+        generateValue: true
+      - key: ADZUNA_APP_ID
+        value: "545222fa"
+      - key: ADZUNA_APP_KEY
+        value: d533817756c10bc7e66c784f39d3f04d
+      - key: ALLOWED_ORIGINS
+        value: '["https://internhub-app.web.app","https://internhub-app.firebaseapp.com","http://localhost:7070","http://127.0.0.1:7070"]'
+    healthCheckPath: /api/v1/health

@@ -1,0 +1,96 @@
+version: '3.9'
+
+services:
+  # ─── PostgreSQL Database ──────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: internhub_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: internhub
+      POSTGRES_USER: internhub
+      POSTGRES_PASSWORD: internhub
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U internhub -d internhub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─── Redis ────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: internhub_redis
+    restart: unless-stopped
+    command: redis-server --requirepass internhub --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "internhub", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── FastAPI Backend ──────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: internhub_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://internhub:internhub@db:5432/internhub
+      REDIS_URL: redis://:internhub@redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app    # Live reload for development
+
+  # ─── Celery Worker ────────────────────────────────────────────────────
+  celery_worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: internhub_celery
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://internhub:internhub@db:5432/internhub
+      REDIS_URL: redis://:internhub@redis:6379/0
+    depends_on:
+      - api
+      - redis
+    profiles: ["full"]  # Only start with --profile full
+
+  # ─── Nginx Reverse Proxy ──────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: internhub_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    profiles: ["full"]  # Only start with --profile full
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
