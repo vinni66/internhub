@@ -1,54 +1,47 @@
-# ─── FastAPI Core ─────────────────────────────────────────────────────────
-fastapi==0.115.5
+# FastAPI Core
+fastapi>=0.115.5
 uvicorn[standard]==0.32.1
 python-multipart==0.0.12
 
-# ─── Pydantic / Settings ──────────────────────────────────────────────────
-pydantic==2.10.3
-pydantic-settings==2.6.1
-pydantic[email]==2.10.3
+# Pydantic / Settings - 2.11.x ships Python 3.14 pre-built wheels (no Rust!)
+pydantic>=2.11.0
+pydantic-settings>=2.8.0
 email-validator==2.2.0
 
-# ─── Database ─────────────────────────────────────────────────────────────
+# Database
 sqlalchemy[asyncio]==2.0.36
 asyncpg==0.30.0
 alembic==1.14.0
 psycopg2-binary==2.9.10
 
-# ─── Redis ────────────────────────────────────────────────────────────────
+# Redis
 redis==5.2.1
 hiredis==3.1.0
 
-# ─── Authentication / Security ────────────────────────────────────────────
+# Authentication / Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 cryptography==44.0.0
 
-# ─── HTTP Client (for external API calls) ────────────────────────────────
+# HTTP Client
 httpx==0.28.1
 
-# ─── File handling ────────────────────────────────────────────────────────
+# File handling
 python-magic==0.4.27
-boto3==1.35.74               # AWS S3
+boto3==1.35.74
 
-# ─── Rate Limiting ────────────────────────────────────────────────────────
+# Rate Limiting
 slowapi==0.1.9
 
-# ─── Task Queue ───────────────────────────────────────────────────────────
-# (Removed celery and flower as they are unused directly by the FastAPI web service)
-
-# ─── CSV Processing ───────────────────────────────────────────────────────
-# (Removed pandas and openpyxl as they are currently unused and block Render deploy)
-
-# ─── Email ────────────────────────────────────────────────────────────────
+# Email
 fastapi-mail==1.4.1
-jinja2==3.1.4                # Email templates
+jinja2==3.1.4
 
-# ─── Monitoring ───────────────────────────────────────────────────────────
+# Monitoring
 sentry-sdk[fastapi]==2.19.2
 prometheus-fastapi-instrumentator==7.0.0
 
-# ─── Utilities ────────────────────────────────────────────────────────────
+# Utilities
 python-dateutil==2.9.0
 pytz==2024.2
-orjson==3.10.12              # Fast JSON serialization
+orjson>=3.10.14
