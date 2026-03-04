@@ -68,8 +68,10 @@ class _CreateInternshipScreenState
     final client = ref.read(dioClientProvider);
     try {
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(_posterImage!.path,
-            filename: _posterImage!.name),
+        'file': MultipartFile.fromBytes(
+          await _posterImage!.readAsBytes(),
+          filename: _posterImage!.name,
+        ),
       });
       final res = await client.dio.post('/upload/image', data: formData);
       return res.data['url'] as String?;
