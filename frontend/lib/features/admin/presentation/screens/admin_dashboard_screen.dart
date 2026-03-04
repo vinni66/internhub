@@ -48,6 +48,13 @@ class AdminDashboardScreen extends ConsumerWidget {
           SliverAppBar(
             expandedHeight: 120,
             pinned: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
+                onPressed: () =>
+                    ref.read(authNotifierProvider.notifier).logout(),
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration:

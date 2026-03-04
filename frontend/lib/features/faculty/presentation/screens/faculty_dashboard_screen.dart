@@ -33,6 +33,11 @@ class FacultyDashboardScreen extends ConsumerWidget {
             pinned: true,
             actions: [
               IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
+                onPressed: () =>
+                    ref.read(authNotifierProvider.notifier).logout(),
+              ),
+              IconButton(
                 icon: const Icon(Icons.add, color: Colors.white),
                 onPressed: () => context.push('/faculty/create-internship'),
               ),
