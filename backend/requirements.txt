@@ -39,8 +39,7 @@ celery[redis]==5.4.0
 flower==2.0.1                # Celery monitoring UI
 
 # ─── CSV Processing ───────────────────────────────────────────────────────
-pandas==2.2.3
-openpyxl==3.1.5
+# (Removed pandas and openpyxl as they are currently unused and block Render deploy)
 
 # ─── Email ────────────────────────────────────────────────────────────────
 fastapi-mail==1.4.1
