@@ -35,8 +35,7 @@ boto3==1.35.74               # AWS S3
 slowapi==0.1.9
 
 # ─── Task Queue ───────────────────────────────────────────────────────────
-celery[redis]==5.4.0
-flower==2.0.1                # Celery monitoring UI
+# (Removed celery and flower as they are unused directly by the FastAPI web service)
 
 # ─── CSV Processing ───────────────────────────────────────────────────────
 # (Removed pandas and openpyxl as they are currently unused and block Render deploy)
