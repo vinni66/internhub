@@ -36,14 +36,13 @@ def create_app() -> FastAPI:
     )
 
     # ─── CORS ────────────────────────────────────────────────────────────────
-    # In DEBUG/dev, allow all origins so Flutter web (random port) can connect.
-    # In production, restrict to settings.ALLOWED_ORIGINS only.
-    cors_origins = ["*"] if settings.DEBUG else settings.ALLOWED_ORIGINS
+    # Always use explicit origin list + Vercel regex.
+    # Never use wildcard ("*") so allow_credentials=True always works.
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=cors_origins,
-        allow_origin_regex=r"https://.*\.vercel\.app" if not settings.DEBUG else None,
-        allow_credentials=not settings.DEBUG,  # credentials not supported with wildcard
+        allow_origins=settings.ALLOWED_ORIGINS,
+        allow_origin_regex=r"https://.*\.vercel\.app",
+        allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
