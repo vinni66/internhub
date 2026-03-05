@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
 
 from app.models.notification import Notification
+from app.models.user import User, UserRole
 
 
 class NotificationService:
@@ -84,3 +85,32 @@ class NotificationService:
         )
         await self.db.commit()
         return {"marked_read": True}
+
+    async def broadcast_to_students(
+        self,
+        title: str,
+        message: str,
+        type: str = "faculty_announcement",
+        action_url: Optional[str] = None,
+    ) -> dict:
+        """Send a notification to every active student user."""
+        result = await self.db.execute(
+            select(User).where(
+                User.role == UserRole.STUDENT,
+                User.is_active == True,
+                User.deleted_at.is_(None),
+            )
+        )
+        students = result.scalars().all()
+        for student in students:
+            self.db.add(
+                Notification(
+                    user_id=student.id,
+                    type=type,
+                    title=title,
+                    message=message,
+                    action_url=action_url,
+                )
+            )
+        await self.db.commit()
+        return {"sent_to": len(students)}

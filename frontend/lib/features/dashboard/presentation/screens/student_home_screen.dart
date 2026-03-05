@@ -10,7 +10,7 @@ import 'package:internhub_app/core/constants/api_constants.dart';
 import 'package:internhub_app/features/auth/presentation/providers/auth_notifier.dart';
 import 'package:internhub_app/features/internship/presentation/screens/internship_list_screen.dart';
 
-// ─── Stats Provider ───────────────────────────────────────────────────────────
+// ─── Stats Provider ────────────────────────────────────────────────────────────
 final homeStatsProvider =
     FutureProvider.autoDispose<Map<String, int>>((ref) async {
   final client = ref.watch(dioClientProvider);
@@ -26,17 +26,12 @@ final homeStatsProvider =
         ? appData.length
         : (appData['items'] as List?)?.length ?? 0;
     return {'internships': internshipTotal, 'applications': appCount};
-  } on DioException catch (e) {
-    if (e.response?.statusCode == 401) {
-      return {'internships': 0, 'applications': 0};
-    }
-    return {'internships': 0, 'applications': 0};
   } catch (_) {
     return {'internships': 0, 'applications': 0};
   }
 });
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+// ─── Screen ────────────────────────────────────────────────────────────────────
 class StudentHomeScreen extends ConsumerStatefulWidget {
   const StudentHomeScreen({super.key});
 
@@ -76,66 +71,131 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
     final firstName = authState is AuthStateAuthenticated
-        ? (authState.user.email.split('@')[0])
+        ? authState.user.email.split('@')[0]
         : 'there';
     final greeting = _greeting();
     final listAsync = ref.watch(internshipListProvider);
     final statsAsync = ref.watch(homeStatsProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = Theme.of(context).scaffoldBackgroundColor;
+    final surf = Theme.of(context).colorScheme.surface;
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: bg,
       body: CustomScrollView(
         slivers: [
-          // ── Greeting Header ──────────────────────────────────────────
+          // ── Hero Greeting Header ─────────────────────────────────────────
           SliverToBoxAdapter(
             child: Container(
-              decoration: const BoxDecoration(
+              padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.bgDark],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: [0.0, 0.5],
+                  colors: isDark
+                      ? [const Color(0xFF061824), const Color(0xFF050D1A)]
+                      : [const Color(0xFFE0FFFE), const Color(0xFFF0FEFF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(20, 52, 20, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '$greeting,',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: AppColors.primary,
+                                      blurRadius: 6,
+                                      spreadRadius: 1),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              greeting,
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 12),
                   Text(
-                    firstName,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold),
+                    'Hello, $firstName 👋',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : const Color(0xFF001820),
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Find your perfect internship today 🚀',
-                    style: TextStyle(color: Colors.white60, fontSize: 13),
+                  Text(
+                    'Your next opportunity awaits.',
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.45)
+                          : const Color(0xFF005D6B).withValues(alpha: 0.7),
+                      fontSize: 14,
+                    ),
                   ),
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
 
-          // ── Live Stats Row ────────────────────────────────────────────
+          // ── Stats Row ────────────────────────────────────────────────────
           SliverToBoxAdapter(
             child: statsAsync.when(
-              data: (stats) => _StatsRow(
-                internshipCount: stats['internships'] ?? 0,
-                appCount: stats['applications'] ?? 0,
+              data: (stats) => Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                child: Row(
+                  children: [
+                    _StatCard(
+                      value: '${stats['internships'] ?? 0}',
+                      label: 'Live Openings',
+                      icon: Icons.work_outline_rounded,
+                      accentColor: AppColors.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    _StatCard(
+                      value: '${stats['applications'] ?? 0}',
+                      label: 'Applied',
+                      icon: Icons.send_rounded,
+                      accentColor: AppColors.secondary,
+                    ),
+                  ],
+                ),
               ),
               loading: () => _shimmerStats(),
               error: (_, __) => const SizedBox.shrink(),
             ),
           ),
 
-          // ── Hero Banner (Sliding) ─────────────────────────────────────
+          // ── Hero Banner Slider ─────────────────────────────────────────
           SliverToBoxAdapter(
             child: listAsync.when(
               data: (internships) {
@@ -145,7 +205,7 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
                 return Column(
                   children: [
                     SizedBox(
-                      height: 170,
+                      height: 180,
                       child: PageView.builder(
                         controller: _pageController,
                         itemCount: featured.length,
@@ -155,21 +215,21 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
                             _HeroBannerCard(internship: featured[i]),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
                         featured.length,
                         (index) => AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: _currentBannerIndex == index ? 24 : 8,
-                          height: 8,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          width: _currentBannerIndex == index ? 20 : 6,
+                          height: 6,
                           decoration: BoxDecoration(
                             color: _currentBannerIndex == index
                                 ? AppColors.primary
-                                : AppColors.primary.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(4),
+                                : AppColors.primary.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(3),
                           ),
                         ),
                       ),
@@ -183,89 +243,122 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
             ),
           ),
 
-          // ── Action Grid ───────────────────────────────────────────────
+          // ── Quick Actions ─────────────────────────────────────────────
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                'Quick Actions',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white70 : const Color(0xFF001820),
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ),
+
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             sliver: SliverToBoxAdapter(
-              child: Column(
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionCard(
-                          title: 'Apply\nInternship',
-                          icon: Icons.school_rounded,
-                          color: AppColors.primary,
-                          textColor: Colors.white,
-                          iconColor: AppColors.secondary,
-                          onTap: () => context.go(AppRoutes.internships),
-                        ),
+                  Expanded(
+                    child: _QuickAction(
+                      title: 'Apply\nInternship',
+                      icon: Icons.school_rounded,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00F7FF), Color(0xFF0096A0)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ActionCard(
-                          title: 'Attend\nTest',
-                          icon: Icons.assignment_rounded,
-                          color: AppColors.secondary,
-                          textColor: AppColors.primary,
-                          iconColor: AppColors.primary,
-                          onTap: () => context.go(
-                              '${AppRoutes.exam}/00000000-0000-0000-0000-000000000001?title=AI+Proctored+Exam'),
-                        ),
-                      ),
-                    ],
+                      onTap: () => context.go(AppRoutes.internships),
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ActionCard(
-                          title: 'My\nResults',
-                          icon: Icons.bar_chart_rounded,
-                          color: AppColors.secondary,
-                          textColor: AppColors.primary,
-                          iconColor: AppColors.primary,
-                          onTap: () => context.go(AppRoutes.analytics),
-                        ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _QuickAction(
+                      title: 'Take\nTest',
+                      icon: Icons.assignment_turned_in_rounded,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF0087), Color(0xFF8B004A)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ActionCard(
-                          title: 'AI\nSuggestions',
-                          icon: Icons.lightbulb_outline_rounded,
-                          color: AppColors.primary,
-                          textColor: Colors.white,
-                          iconColor: AppColors.secondary,
-                          onTap: () => context.go(AppRoutes.recommendations),
-                        ),
-                      ),
-                    ],
+                      onTap: () => context.go(
+                          '${AppRoutes.exam}/00000000-0000-0000-0000-000000000001?title=AI+Proctored+Exam'),
+                    ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _QuickAction(
+                      title: 'My\nResults',
+                      icon: Icons.bar_chart_rounded,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF7C3AED), Color(0xFF4C1D95)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      onTap: () => context.go(AppRoutes.analytics),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _QuickAction(
+                      title: 'AI\nAdvise',
+                      icon: Icons.auto_awesome_rounded,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF059669), Color(0xFF064E3B)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      onTap: () => context.go(AppRoutes.recommendations),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
 
-          // ── Recent Openings ───────────────────────────────────────────
+          const SliverToBoxAdapter(child: SizedBox(height: 28)),
+
+          // ── Recent Openings header ─────────────────────────────────────
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverToBoxAdapter(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Recent Openings',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary)),
+                  Text(
+                    'Recent Openings',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white70 : const Color(0xFF001820),
+                      letterSpacing: 0.3,
+                    ),
+                  ),
                   GestureDetector(
                     onTap: () => context.go(AppRoutes.internships),
-                    child: const Text('See all',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        'See all',
                         style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13)),
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -274,7 +367,7 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-          // ── Internship Cards ──────────────────────────────────────────
+          // ── Internship Cards ───────────────────────────────────────────
           listAsync.when(
             data: (internships) {
               if (internships.isEmpty) {
@@ -282,22 +375,26 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(32),
                     child: Column(
-                      children: const [
+                      children: [
                         Icon(Icons.work_off_rounded,
-                            size: 48, color: AppColors.textMuted),
-                        SizedBox(height: 8),
-                        Text('No internships posted yet',
-                            style: TextStyle(color: AppColors.textSecondary)),
+                            size: 48,
+                            color: isDark ? Colors.white24 : Colors.black26),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No internships posted yet',
+                          style: TextStyle(
+                              color: isDark ? Colors.white38 : Colors.black38),
+                        ),
                       ],
                     ),
                   ),
                 );
               }
               return SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (_, i) => _RecommendedCard(
+                    (_, i) => _InternshipCard(
                       internship: internships[i],
                       onTap: () =>
                           context.go('/internships/${internships[i].id}'),
@@ -325,27 +422,27 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
 
   String _greeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return 'GOOD MORNING';
+    if (hour < 17) return 'GOOD AFTERNOON';
+    return 'GOOD EVENING';
   }
 
   Widget _shimmerStats() {
-    return Shimmer.fromColors(
-      baseColor: AppColors.bgElevated,
-      highlightColor: AppColors.bgCard,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      child: Shimmer.fromColors(
+        baseColor: AppColors.bgElevated,
+        highlightColor: AppColors.bgCard,
         child: Row(
           children: List.generate(
             2,
             (_) => Expanded(
               child: Container(
-                height: 56,
+                height: 72,
                 margin: const EdgeInsets.symmetric(horizontal: 6),
                 decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(16)),
               ),
             ),
           ),
@@ -359,10 +456,10 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
       baseColor: AppColors.bgElevated,
       highlightColor: AppColors.bgCard,
       child: Container(
-        height: 170,
+        height: 180,
         margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(16)),
+            color: Colors.white, borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
@@ -372,82 +469,78 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
       baseColor: AppColors.bgElevated,
       highlightColor: AppColors.bgCard,
       child: Container(
-        height: 72,
+        height: 76,
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            color: Colors.white, borderRadius: BorderRadius.circular(16)),
       ),
     );
   }
 }
 
-// ─── Stats Row ────────────────────────────────────────────────────────────────
-class _StatsRow extends StatelessWidget {
-  final int internshipCount;
-  final int appCount;
-  const _StatsRow({required this.internshipCount, required this.appCount});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-      child: Row(
-        children: [
-          _StatChip(
-            icon: Icons.work_outline_rounded,
-            value: '$internshipCount',
-            label: 'Live Openings',
-            color: AppColors.primary,
-          ),
-          const SizedBox(width: 12),
-          _StatChip(
-            icon: Icons.send_rounded,
-            value: '$appCount',
-            label: 'Applied',
-            color: AppColors.success,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  final IconData icon;
+// ─── Stat Card ─────────────────────────────────────────────────────────────────
+class _StatCard extends StatelessWidget {
   final String value;
   final String label;
-  final Color color;
-  const _StatChip(
-      {required this.icon,
-      required this.value,
-      required this.label,
-      required this.color});
+  final IconData icon;
+  final Color accentColor;
+
+  const _StatCard({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.accentColor,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: accentColor.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: accentColor, size: 20),
+            ),
+            const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value,
-                    style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16)),
-                Text(label,
-                    style: const TextStyle(
-                        color: AppColors.textSecondary, fontSize: 11)),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: accentColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isDark ? Colors.white38 : Colors.black45,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ],
@@ -457,7 +550,59 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// ─── Hero Banner Card (Real Data) ─────────────────────────────────────────────
+// ─── Quick Action Tile ─────────────────────────────────────────────────────────
+class _QuickAction extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final LinearGradient gradient;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.title,
+    required this.icon,
+    required this.gradient,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: gradient.colors.first.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: Colors.white, size: 26),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Hero Banner Card ──────────────────────────────────────────────────────────
 class _HeroBannerCard extends StatelessWidget {
   final InternshipModel internship;
   const _HeroBannerCard({required this.internship});
@@ -469,33 +614,50 @@ class _HeroBannerCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: AppColors.secondary,
-          image: DecorationImage(
-            image: internship.posterUrl != null
-                ? NetworkImage(
-                    '${ApiConstants.baseUrl.replaceAll('/api/v1', '')}${internship.posterUrl}')
-                : const AssetImage('assets/images/default_banner.png')
-                    as ImageProvider,
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-                Colors.black.withValues(alpha: 0.4), BlendMode.darken),
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0A1F35), Color(0xFF071526)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.25), width: 1),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: AppColors.primary.withValues(alpha: 0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
+          image: internship.posterUrl != null
+              ? DecorationImage(
+                  image: NetworkImage(
+                      '${ApiConstants.baseUrl.replaceAll('/api/v1', '')}${internship.posterUrl}'),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                      Colors.black.withValues(alpha: 0.55), BlendMode.darken),
+                )
+              : null,
         ),
         child: Stack(
           children: [
+            // Cyan glow top-right
             Positioned(
               right: -20,
-              bottom: -10,
-              child: Icon(Icons.computer_rounded,
-                  size: 120, color: AppColors.primary.withValues(alpha: 0.08)),
+              top: -20,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.15),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(20),
@@ -503,55 +665,78 @@ class _HeroBannerCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    internship.companyName,
-                    style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      internship.companyName.toUpperCase(),
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
                     internship.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900),
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      height: 1.2,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
+                      GestureDetector(
+                        onTap: () =>
+                            context.go('/internships/${internship.id}'),
+                        child: Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'View Details',
+                            style: TextStyle(
+                              color: Color(0xFF001820),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
-                        onPressed: () =>
-                            context.go('/internships/${internship.id}'),
-                        child: const Text('View Details'),
                       ),
                       if (internship.stipendRange != null) ...[
                         const SizedBox(width: 10),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 8),
+                              horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.2)),
                           ),
                           child: Text(
                             internship.stipendRange!,
                             style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold),
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -567,97 +752,53 @@ class _HeroBannerCard extends StatelessWidget {
   }
 }
 
-// ─── Action Card ──────────────────────────────────────────────────────────────
-class _ActionCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color color;
-  final Color textColor;
-  final Color iconColor;
-  final VoidCallback onTap;
-
-  const _ActionCard({
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.textColor,
-    required this.iconColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: iconColor, size: 32),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                    color: textColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Recent Internship Card ───────────────────────────────────────────────────
-class _RecommendedCard extends StatelessWidget {
+// ─── Internship List Card ──────────────────────────────────────────────────────
+class _InternshipCard extends StatelessWidget {
   final InternshipModel internship;
   final VoidCallback onTap;
 
-  const _RecommendedCard({required this.internship, required this.onTap});
+  const _InternshipCard({required this.internship, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final modeColors = {
+      'remote': AppColors.success,
+      'onsite': AppColors.secondary,
+      'hybrid': AppColors.primary,
+    };
+    final modeColor =
+        modeColors[internship.mode.toLowerCase()] ?? AppColors.primary;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.07),
+          ),
         ),
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
-                gradient: AppColors.gradientPrimary,
-                borderRadius: BorderRadius.circular(10),
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.8),
+                    AppColors.primaryDark.withValues(alpha: 0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
                 child: Text(
@@ -665,9 +806,10 @@ class _RecommendedCard extends StatelessWidget {
                       ? internship.companyName[0].toUpperCase()
                       : '?',
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18),
+                    color: Color(0xFF001820),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
                 ),
               ),
             ),
@@ -676,18 +818,23 @@ class _RecommendedCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(internship.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: AppColors.textPrimary)),
+                  Text(
+                    internship.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: isDark ? Colors.white : const Color(0xFF001820),
+                    ),
+                  ),
                   const SizedBox(height: 3),
                   Text(
                     '${internship.companyName}${internship.location != null ? ' · ${internship.location}' : ''}',
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 12),
+                    style: TextStyle(
+                      color: isDark ? Colors.white38 : Colors.black45,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -699,32 +846,39 @@ class _RecommendedCard extends StatelessWidget {
                 if (internship.stipendRange != null)
                   Text(
                     internship.stipendRange!,
-                    style: const TextStyle(
-                        color: AppColors.success,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11),
+                    style: TextStyle(
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                    ),
                   ),
                 const SizedBox(height: 4),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(100),
+                    color: modeColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: modeColor.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     internship.mode.toUpperCase(),
-                    style: const TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      color: modeColor,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(width: 6),
-            const Icon(Icons.chevron_right_rounded,
-                color: AppColors.primary, size: 20),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: isDark ? Colors.white24 : Colors.black26,
+              size: 14,
+            ),
           ],
         ),
       ),

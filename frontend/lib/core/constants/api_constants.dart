@@ -72,6 +72,11 @@ class ApiConstants {
   static String submitExam(String id) => '/exam/sessions/$id/submit';
   static String proctorEvents(String id) => '/exam/sessions/$id/proctor-events';
 
+  // ── Notifications ─────────────────────────────────────────────────────
+  static const String notifications = '/notifications';
+  static const String notificationsUnreadCount = '/notifications/unread-count';
+  static const String broadcastNotification = '/notifications/broadcast';
+
   // ── Recommendations ───────────────────────────────────────────────────
   static const String recommendations = '/recommend/internships';
   static const String skillGaps = '/recommend/skill-gaps';

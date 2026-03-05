@@ -32,14 +32,20 @@ class FacultyDashboardScreen extends ConsumerWidget {
             expandedHeight: 120,
             pinned: true,
             actions: [
+              // ── Send Notification ──────────────────────────────────────
               IconButton(
-                icon: const Icon(Icons.logout, color: Colors.white),
-                onPressed: () =>
-                    ref.read(authNotifierProvider.notifier).logout(),
+                icon: const Icon(Icons.campaign_rounded, color: Colors.white),
+                tooltip: 'Send Notification to Students',
+                onPressed: () => _showBroadcastSheet(context, ref),
               ),
               IconButton(
                 icon: const Icon(Icons.add, color: Colors.white),
                 onPressed: () => context.push('/faculty/create-internship'),
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
+                onPressed: () =>
+                    ref.read(authNotifierProvider.notifier).logout(),
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -125,8 +131,248 @@ class FacultyDashboardScreen extends ConsumerWidget {
       ),
     );
   }
+
+  // ─── Broadcast Sheet ────────────────────────────────────────────────────────
+  void _showBroadcastSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _BroadcastSheet(ref: ref),
+    );
+  }
 }
 
+// ─── Broadcast Bottom Sheet ────────────────────────────────────────────────────
+class _BroadcastSheet extends StatefulWidget {
+  final WidgetRef ref;
+  const _BroadcastSheet({required this.ref});
+
+  @override
+  State<_BroadcastSheet> createState() => _BroadcastSheetState();
+}
+
+class _BroadcastSheetState extends State<_BroadcastSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _messageController = TextEditingController();
+  bool _sending = false;
+  String? _result;
+  bool _success = false;
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _sending = true;
+      _result = null;
+    });
+    try {
+      final resp = await widget.ref.read(dioClientProvider).dio.post(
+        ApiConstants.broadcastNotification,
+        data: {
+          'title': _titleController.text.trim(),
+          'message': _messageController.text.trim(),
+        },
+      );
+      final sent = resp.data['sent_to'] as int? ?? 0;
+      setState(() {
+        _success = true;
+        _result = 'Notification sent to $sent student${sent == 1 ? '' : 's'}!';
+      });
+    } catch (e) {
+      setState(() {
+        _success = false;
+        _result = 'Failed to send: ${e.toString().split(']:').last.trim()}';
+      });
+    } finally {
+      setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final sheetBg = isDark ? const Color(0xFF0D1F33) : Colors.white;
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+
+    return Container(
+      margin: const EdgeInsets.all(12),
+      padding: EdgeInsets.fromLTRB(20, 24, 20, 20 + bottom),
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.campaign_rounded,
+                      color: AppColors.primary, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Push Notification',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color:
+                              isDark ? Colors.white : const Color(0xFF001820),
+                        ),
+                      ),
+                      Text(
+                        'Broadcast to all students',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white38 : Colors.black45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close,
+                      color: isDark ? Colors.white38 : Colors.black38),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Title field
+            TextFormField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: 'Title',
+                hintText: 'e.g. New Internship Available!',
+                prefixIcon: Icon(Icons.title_rounded, color: AppColors.primary),
+              ),
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Title is required' : null,
+              enabled: !_sending,
+            ),
+            const SizedBox(height: 12),
+
+            // Message field
+            TextFormField(
+              controller: _messageController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: 'Message',
+                hintText: 'Write your message to students...',
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.only(bottom: 44),
+                  child: Icon(Icons.message_rounded, color: AppColors.primary),
+                ),
+                alignLabelWithHint: true,
+              ),
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Message is required' : null,
+              enabled: !_sending,
+            ),
+            const SizedBox(height: 16),
+
+            // Result banner
+            if (_result != null)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: _success
+                      ? AppColors.success.withValues(alpha: 0.12)
+                      : AppColors.error.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: _success
+                        ? AppColors.success.withValues(alpha: 0.4)
+                        : AppColors.error.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _success
+                          ? Icons.check_circle_rounded
+                          : Icons.error_rounded,
+                      color: _success ? AppColors.success : AppColors.error,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _result!,
+                        style: TextStyle(
+                          color: _success ? AppColors.success : AppColors.error,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Send button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _sending ? null : _send,
+                icon: _sending
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.send_rounded),
+                label: Text(_sending ? 'Sending...' : 'Send to All Students'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: const Color(0xFF001820),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Internship Card ──────────────────────────────────────────────────────────
 class _InternshipCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final WidgetRef ref;
@@ -141,12 +387,14 @@ class _InternshipCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isPublished
               ? AppColors.success.withValues(alpha: 0.5)
-              : AppColors.border,
+              : Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white12
+                  : Colors.black12,
         ),
       ),
       child: Column(
@@ -164,7 +412,7 @@ class _InternshipCard extends StatelessWidget {
                               fontWeight: FontWeight.w600, fontSize: 15)),
                       const SizedBox(height: 2),
                       Text(data['company_name'] as String? ?? '',
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: AppColors.primary, fontSize: 13)),
                     ],
                   ),
@@ -201,7 +449,6 @@ class _InternshipCard extends StatelessWidget {
                     .map((s) => Chip(
                           label: Text(s, style: const TextStyle(fontSize: 11)),
                           visualDensity: VisualDensity.compact,
-                          backgroundColor: AppColors.bgElevated,
                           side: BorderSide.none,
                           padding: EdgeInsets.zero,
                         ))
@@ -250,8 +497,12 @@ class _InternshipCard extends StatelessWidget {
                     label: const Text('Live Monitor'),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.edit,
-                      size: 18, color: AppColors.textSecondary),
+                  icon: Icon(Icons.edit,
+                      size: 18,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.5)),
                   onPressed: () {},
                 ),
               ],
